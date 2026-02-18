@@ -1,6 +1,6 @@
-# LiDAR World Model
+# LiDAR World Model (LidarWorldModel)
 
-Nexus is a deployable fixed 3D LiDAR edge node for factories. It maintains a local 3D world model and emits **events** (not raw point clouds). The MVP focuses on **actionable geometric change detection** with deterministic replay and config-driven fidelity.
+LiDAR World Model is a deployable fixed 3D LiDAR edge node for factories. It maintains a local 3D world model and emits **events** (not raw point clouds). The MVP focuses on **actionable geometric change detection** with deterministic replay and config-driven fidelity.
 
 ## Product goal
 
@@ -18,7 +18,7 @@ MVP uses a controlled baseline workflow:
 
 1. **Baseline capture** (“learn normal” for N seconds/minutes).
 2. Detect changes against the baseline, using persistence filters.
-3. **Re-baseline** is a deliberate operation when the environment changes permanently.
+3. **Re-baselining** is a deliberate operation when the environment changes permanently.
 
 Later versions can evolve to a slowly updating background model that absorbs persistent structure and ignores transient motion.
 
@@ -29,7 +29,7 @@ Later versions can evolve to a slowly updating background model that absorbs per
 - **Modular, testable pipeline** with deterministic replay as a first-class feature.
 - Strict separation of:
   - **Core algorithms** (platform-agnostic)
-  - **Adapters** (Isaac log replay now, ROS2/drivers later)
+  - **Adapters** (file replay now, ROS2/drivers later)
 - Multi-node ready from day 1:
   - `node_id`
   - explicit coordinate frames (`lidar`, `node`, `site`)
@@ -38,9 +38,59 @@ Later versions can evolve to a slowly updating background model that absorbs per
 
 ---
 
+## World model representation
+
+LiDAR World Model uses a **sparse voxel occupancy map** with 3 states:
+
+- `free`
+- `occupied`
+- `unknown` (unobserved; important for occlusion and “don’t know” areas)
+
+The map is **sparse** via **hashed voxel blocks** (recommended for Jetson-friendly performance and fast neighbourhood operations).
+
+Fidelity is controlled via config:
+- voxel size (cm-level target, adjustable)
+- ROI / bounds
+- integration rate, decimation policy
+- throughput budgets (points/sec, FPS targets)
+
+---
+
+## Event output
+
+Start with:
+- `obstacle_added`
+- optionally `obstacle_removed`
+
+Each event includes:
+- `timestamp`, `node_id`
+- AABB (in `site` frame if available; otherwise `node`)
+- size/volume, confidence, persistence duration
+- optional minimal metadata for movement heuristics (e.g. overlap with previous AABB)
+
+Event schemas live in `schemas/events/` and should remain backwards compatible.
+
+---
+
+## Coordinate frames & transforms
+
+We treat frames as explicit and versioned.
+
+- `lidar` frame: sensor origin
+- `node` frame: physical node mounting frame
+- `site` frame: factory/site coordinate frame (optional in MVP)
+
+Transforms:
+- `T_node_lidar`: required (extrinsics)
+- `T_site_node`: optional now; required for multi-node site alignment later
+
+See `docs/coordinate_frames.md`.
+
+---
+
 ## Repository structure
 
-nexus/
+LidarWorldModel/
 README.md
 LICENSE
 CMakeLists.txt
@@ -65,7 +115,8 @@ obstacle_removed.schema.json
 calibration/
 extrinsics.schema.json
 
-include/nexus/
+include/
+wm/
 core/
 geom/
 mapping/
@@ -86,7 +137,7 @@ replay/
 isaac/
 ros2/
 apps/
-nexus_node/
+wm_node/
 tools/
 cli/
 
@@ -132,76 +183,29 @@ toolchains/
 ### What goes where
 
 - `src/core/`  
-  All platform-agnostic logic:
-  - voxel occupancy world model (free/occupied/unknown)
+  Platform-agnostic logic:
+  - sparse voxel occupancy world model (free/occupied/unknown)
   - filtering (ground removal, outliers, masking, exclusion zones)
-  - change detection (clustering, min volume, persistence time)
+  - change detection (delta, clustering, persistence)
   - event building (AABB, confidence, duration)
   - metrics (false positives/min, latency, min detectable size)
 
 - `src/adapters/`  
-  Anything that touches external systems:
+  Integration points:
   - file replay reader/parser (MVP)
   - Isaac log conversion/parsing
   - ROS2 (later): subscriptions, TF, QoS, message types
 
 - `src/apps/`  
   Executables:
-  - `nexus_node`: runs continuously, builds world model, detects change, emits events/logs
+  - `wm_node`: runs continuously, builds world model, detects change, emits events/logs
   - `tools/`: re-baselining, map inspection, config hash reporting, dataset utilities
 
 - `configs/`  
-  YAML configs that control fidelity, budgets, nuisance handling, change thresholds, calibration.
+  YAML configs controlling fidelity, budgets, nuisance handling, thresholds, calibration.
 
 - `data/datasets/golden_runs/`  
-  Deterministic replay datasets for regression and metrics tracking.
-
----
-
-## World model representation (MVP)
-
-**Voxel occupancy map** with 3 states:
-
-- `free`
-- `occupied`
-- `unknown` (unobserved; important for occlusion reasoning)
-
-Fidelity is controlled via config:
-- voxel size (cm-level target, adjustable)
-- ROI / bounds
-- update rates, decimation policies
-
----
-
-## Event output (MVP)
-
-Start with:
-- `obstacle_added`
-- optionally `obstacle_removed`
-
-Each event includes:
-- `timestamp`, `node_id`
-- AABB (in `site` frame if available; otherwise `node`)
-- size/volume, confidence, persistence duration
-- optional minimal metadata for movement heuristics (e.g. overlap with previous AABB)
-
-Schemas live in `schemas/events/` and should remain backwards compatible.
-
----
-
-## Coordinate frames & transforms
-
-We treat frames as explicit and versioned.
-
-- `lidar` frame: sensor origin
-- `node` frame: physical node mounting frame
-- `site` frame: factory/site coordinate frame (optional in MVP)
-
-Transforms:
-- `T_node_lidar`: required (extrinsics)
-- `T_site_node`: optional now; required for multi-node site alignment later
-
-See `docs/coordinate_frames.md`.
+  Deterministic replay datasets for regression and metric tracking.
 
 ---
 
@@ -223,15 +227,14 @@ Configs are split by concern (and can be layered):
 ## Build (WSL / Ubuntu)
 
 ### Prerequisites
-- CMake (recommend 3.22+)
-- A C++20 compiler (GCC 11+ or Clang 14+ recommended)
-- Optional but common deps:
+- CMake (3.22+ recommended)
+- C++20 compiler (GCC 11+ or Clang 14+ recommended)
+- Common dependencies (recommended):
   - Eigen (math/geometry)
-  - fmt + spdlog (logging)
   - yaml-cpp (configs)
+  - fmt + spdlog (logging)
 
 ### Build commands
 ```bash
-# From repo root
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j
