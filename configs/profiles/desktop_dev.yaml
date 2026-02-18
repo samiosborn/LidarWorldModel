@@ -1,0 +1,47 @@
+# configs/profiles/desktop_dev.yaml
+mode: replay
+node_id: node_001
+
+frames:
+  lidar_frame: lidar
+  node_frame: node
+  site_frame: site
+
+baseline:
+  warmup_duration_s: 0
+  capture_duration_s: 5
+
+mapping:
+  voxel_size_m: 0.02
+  block_size_vox: 8
+  roi:
+    min: { x: -10.0, y: -10.0, z: -2.0 }
+    max: { x:  10.0, y:  10.0, z:  5.0 }
+  min_range_m: 0.2
+  max_range_m: 50.0
+  use_intensity: true
+  integrate_hz: 10
+
+budgets:
+  max_points_per_sec: 2000000
+  target_fps: 10
+  downsample_voxel_m: 0.03
+
+change:
+  persistence_s: 2
+  min_cluster_volume_m3: 0.01
+  min_aabb_edge_m: 0.10
+  min_confidence: 0.6
+  prefer_site_frame: true
+
+replay:
+  dataset_path: data/datasets/golden_runs/no_change/run_001
+  time_scale: 0
+  start_offset_s: 0
+  end_offset_s: 0
+  loop: false
+
+output:
+  out_dir: out
+  heartbeat_period_s: 5
+  

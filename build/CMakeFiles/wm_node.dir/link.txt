@@ -1,0 +1,1 @@
+/usr/bin/c++ -O3 -DNDEBUG CMakeFiles/wm_node.dir/src/apps/wm_node/main.cpp.o -o bin/wm_node  -Wl,-rpath,/mnt/c/Users/samiosborn/anaconda3/Library/bin lib/libwm_adapter_replay.a lib/libwm_core.a /usr/lib/x86_64-linux-gnu/libyaml-cpp.so.0.7.0 /mnt/c/Users/samiosborn/anaconda3/Library/bin/spdlog.dll /mnt/c/Users/samiosborn/anaconda3/Library/bin/fmt.dll 
