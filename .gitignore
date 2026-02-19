@@ -39,3 +39,15 @@
 
 # debug information files
 *.dwo
+
+# Build artefacts
+/build/
+/out/
+
+# Editor/OS noise
+.vscode/
+.DS_Store
+
+# Datasets
+/data/datasets/**/frames/
+/data/datasets/**/pointclouds/
