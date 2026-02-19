@@ -3,10 +3,12 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <chrono>
 
 #include "wm/core/config.hpp"
 #include "wm/core/config_loader.hpp"
 #include "wm/core/status.hpp"
+#include "wm/core/events/jsonl_event_sink.hpp"
 
 namespace {
 
@@ -30,6 +32,14 @@ void print_usage(const char* argv0) {
 double ns_to_seconds(std::int64_t ns) {
   return static_cast<double>(ns) / 1'000'000'000.0;
 }
+
+wm::TimestampNs now_epoch_ns() {
+  using clock = std::chrono::system_clock;
+  const auto now = clock::now().time_since_epoch();
+  const auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(now).count();
+  return wm::TimestampNs{static_cast<std::int64_t>(ns)};
+}
+
 
 wm::Result<wm::RunMode> parse_mode(const std::string& s) {
   const auto lower = [&]() {
@@ -209,6 +219,37 @@ int main(int argc, char** argv) {
   if (!s.ok()) {
     std::cerr << "error: invalid config after overrides: " << s.message() << "\n";
     return 2;
+  }
+
+    // Write a run header + one heartbeat so we can see output end-to-end.
+  wm::JsonlEventSink sink;
+  wm::RunInfo run;
+  run.node_id = cfg.node_id;
+  run.config_path = args.config_path;
+  run.out_dir = cfg.output.out_dir;
+  run.config_hash = "";       // wired up when repro_hash lands
+  run.calibration_hash = "";  // wired up when repro_hash lands
+  run.start_time = now_epoch_ns();
+
+  {
+    const wm::Status open_s = sink.open(run);
+    if (!open_s.ok()) {
+      std::cerr << "error: failed to open event sink: " << open_s.message() << "\n";
+      return 2;
+    }
+
+    wm::Event hb;
+    hb.type = "heartbeat";
+    hb.timestamp = now_epoch_ns();
+    hb.message = "wm_node config loaded";
+    const wm::Status emit_s = sink.emit(hb);
+    if (!emit_s.ok()) {
+      std::cerr << "error: failed to emit heartbeat: " << emit_s.message() << "\n";
+      return 2;
+    }
+
+    sink.flush();
+    std::cout << "\nWrote events to: " << sink.path() << "\n";
   }
 
   // For now: just prove config load + deterministic overrides.

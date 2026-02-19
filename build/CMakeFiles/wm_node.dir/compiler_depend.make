@@ -204,6 +204,11 @@ CMakeFiles/wm_node.dir/src/apps/wm_node/main.cpp.o: ../src/apps/wm_node/main.cpp
   /usr/include/c++/11/bits/stl_vector.h \
   /usr/include/c++/11/bits/stl_bvector.h \
   /usr/include/c++/11/bits/vector.tcc \
+  /usr/include/c++/11/chrono \
+  /usr/include/c++/11/ratio \
+  /usr/include/c++/11/limits \
+  /usr/include/c++/11/ctime \
+  /usr/include/c++/11/bits/parse_numbers.h \
   ../include/wm/core/config.hpp \
   ../include/wm/core/status.hpp \
   /usr/include/c++/11/optional \
@@ -212,8 +217,25 @@ CMakeFiles/wm_node.dir/src/apps/wm_node/main.cpp.o: ../src/apps/wm_node/main.cpp
   /usr/include/c++/11/bits/enable_special_members.h \
   ../include/wm/core/types.hpp \
   /usr/include/c++/11/array \
-  ../include/wm/core/config_loader.hpp
+  ../include/wm/core/config_loader.hpp \
+  ../include/wm/core/events/jsonl_event_sink.hpp \
+  /usr/include/c++/11/fstream \
+  /usr/include/c++/11/bits/codecvt.h \
+  /usr/include/x86_64-linux-gnu/c++/11/bits/basic_file.h \
+  /usr/include/x86_64-linux-gnu/c++/11/bits/c++io.h \
+  /usr/include/c++/11/bits/fstream.tcc \
+  ../include/wm/core/events/event_sink.hpp
 
+
+../include/wm/core/events/event_sink.hpp:
+
+/usr/include/c++/11/bits/fstream.tcc:
+
+/usr/include/x86_64-linux-gnu/c++/11/bits/c++io.h:
+
+/usr/include/x86_64-linux-gnu/c++/11/bits/basic_file.h:
+
+../include/wm/core/events/jsonl_event_sink.hpp:
 
 ../include/wm/core/config_loader.hpp:
 
@@ -226,6 +248,12 @@ CMakeFiles/wm_node.dir/src/apps/wm_node/main.cpp.o: ../src/apps/wm_node/main.cpp
 /usr/include/c++/11/bits/stl_relops.h:
 
 ../include/wm/core/status.hpp:
+
+/usr/include/c++/11/bits/parse_numbers.h:
+
+/usr/include/c++/11/limits:
+
+/usr/include/c++/11/ratio:
 
 /usr/include/c++/11/optional:
 
@@ -289,6 +317,8 @@ CMakeFiles/wm_node.dir/src/apps/wm_node/main.cpp.o: ../src/apps/wm_node/main.cpp
 
 /usr/include/stdio.h:
 
+/usr/include/c++/11/chrono:
+
 /usr/include/c++/11/cstdio:
 
 /usr/include/c++/11/bits/max_size_type.h:
@@ -310,6 +340,8 @@ CMakeFiles/wm_node.dir/src/apps/wm_node/main.cpp.o: ../src/apps/wm_node/main.cpp
 /usr/include/c++/11/bits/algorithmfwd.h:
 
 /usr/include/c++/11/bits/stl_algo.h:
+
+/usr/include/c++/11/fstream:
 
 /usr/include/c++/11/ext/alloc_traits.h:
 
@@ -408,6 +440,10 @@ CMakeFiles/wm_node.dir/src/apps/wm_node/main.cpp.o: ../src/apps/wm_node/main.cpp
 /usr/include/x86_64-linux-gnu/bits/byteswap.h:
 
 /usr/include/alloca.h:
+
+/usr/include/c++/11/bits/codecvt.h:
+
+/usr/include/c++/11/ctime:
 
 /usr/include/x86_64-linux-gnu/bits/time64.h:
 

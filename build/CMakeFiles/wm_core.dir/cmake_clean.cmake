@@ -1,4 +1,6 @@
 file(REMOVE_RECURSE
+  "CMakeFiles/wm_core.dir/src/core/events/jsonl_event_sink.cpp.o"
+  "CMakeFiles/wm_core.dir/src/core/events/jsonl_event_sink.cpp.o.d"
   "CMakeFiles/wm_core.dir/src/core/util/config_loader.cpp.o"
   "CMakeFiles/wm_core.dir/src/core/util/config_loader.cpp.o.d"
   "lib/libwm_core.a"

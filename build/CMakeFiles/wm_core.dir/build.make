@@ -83,17 +83,33 @@ CMakeFiles/wm_core.dir/src/core/util/config_loader.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/wm_core.dir/src/core/util/config_loader.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/samio/WSLGit/Robotics/LidarWorldModel/src/core/util/config_loader.cpp -o CMakeFiles/wm_core.dir/src/core/util/config_loader.cpp.s
 
+CMakeFiles/wm_core.dir/src/core/events/jsonl_event_sink.cpp.o: CMakeFiles/wm_core.dir/flags.make
+CMakeFiles/wm_core.dir/src/core/events/jsonl_event_sink.cpp.o: ../src/core/events/jsonl_event_sink.cpp
+CMakeFiles/wm_core.dir/src/core/events/jsonl_event_sink.cpp.o: CMakeFiles/wm_core.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/samio/WSLGit/Robotics/LidarWorldModel/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/wm_core.dir/src/core/events/jsonl_event_sink.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/wm_core.dir/src/core/events/jsonl_event_sink.cpp.o -MF CMakeFiles/wm_core.dir/src/core/events/jsonl_event_sink.cpp.o.d -o CMakeFiles/wm_core.dir/src/core/events/jsonl_event_sink.cpp.o -c /home/samio/WSLGit/Robotics/LidarWorldModel/src/core/events/jsonl_event_sink.cpp
+
+CMakeFiles/wm_core.dir/src/core/events/jsonl_event_sink.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/wm_core.dir/src/core/events/jsonl_event_sink.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/samio/WSLGit/Robotics/LidarWorldModel/src/core/events/jsonl_event_sink.cpp > CMakeFiles/wm_core.dir/src/core/events/jsonl_event_sink.cpp.i
+
+CMakeFiles/wm_core.dir/src/core/events/jsonl_event_sink.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/wm_core.dir/src/core/events/jsonl_event_sink.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/samio/WSLGit/Robotics/LidarWorldModel/src/core/events/jsonl_event_sink.cpp -o CMakeFiles/wm_core.dir/src/core/events/jsonl_event_sink.cpp.s
+
 # Object files for target wm_core
 wm_core_OBJECTS = \
-"CMakeFiles/wm_core.dir/src/core/util/config_loader.cpp.o"
+"CMakeFiles/wm_core.dir/src/core/util/config_loader.cpp.o" \
+"CMakeFiles/wm_core.dir/src/core/events/jsonl_event_sink.cpp.o"
 
 # External object files for target wm_core
 wm_core_EXTERNAL_OBJECTS =
 
 lib/libwm_core.a: CMakeFiles/wm_core.dir/src/core/util/config_loader.cpp.o
+lib/libwm_core.a: CMakeFiles/wm_core.dir/src/core/events/jsonl_event_sink.cpp.o
 lib/libwm_core.a: CMakeFiles/wm_core.dir/build.make
 lib/libwm_core.a: CMakeFiles/wm_core.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/samio/WSLGit/Robotics/LidarWorldModel/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX static library lib/libwm_core.a"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/samio/WSLGit/Robotics/LidarWorldModel/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking CXX static library lib/libwm_core.a"
 	$(CMAKE_COMMAND) -P CMakeFiles/wm_core.dir/cmake_clean_target.cmake
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/wm_core.dir/link.txt --verbose=$(VERBOSE)
 

@@ -1,2 +1,2 @@
-/usr/bin/ar qc lib/libwm_core.a CMakeFiles/wm_core.dir/src/core/util/config_loader.cpp.o
+/usr/bin/ar qc lib/libwm_core.a CMakeFiles/wm_core.dir/src/core/util/config_loader.cpp.o CMakeFiles/wm_core.dir/src/core/events/jsonl_event_sink.cpp.o
 /usr/bin/ranlib lib/libwm_core.a

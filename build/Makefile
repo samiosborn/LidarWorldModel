@@ -213,6 +213,30 @@ src/apps/wm_node/main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/wm_node.dir/build.make CMakeFiles/wm_node.dir/src/apps/wm_node/main.cpp.s
 .PHONY : src/apps/wm_node/main.cpp.s
 
+src/core/events/jsonl_event_sink.o: src/core/events/jsonl_event_sink.cpp.o
+.PHONY : src/core/events/jsonl_event_sink.o
+
+# target to build an object file
+src/core/events/jsonl_event_sink.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/wm_core.dir/build.make CMakeFiles/wm_core.dir/src/core/events/jsonl_event_sink.cpp.o
+.PHONY : src/core/events/jsonl_event_sink.cpp.o
+
+src/core/events/jsonl_event_sink.i: src/core/events/jsonl_event_sink.cpp.i
+.PHONY : src/core/events/jsonl_event_sink.i
+
+# target to preprocess a source file
+src/core/events/jsonl_event_sink.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/wm_core.dir/build.make CMakeFiles/wm_core.dir/src/core/events/jsonl_event_sink.cpp.i
+.PHONY : src/core/events/jsonl_event_sink.cpp.i
+
+src/core/events/jsonl_event_sink.s: src/core/events/jsonl_event_sink.cpp.s
+.PHONY : src/core/events/jsonl_event_sink.s
+
+# target to generate assembly for a file
+src/core/events/jsonl_event_sink.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/wm_core.dir/build.make CMakeFiles/wm_core.dir/src/core/events/jsonl_event_sink.cpp.s
+.PHONY : src/core/events/jsonl_event_sink.cpp.s
+
 src/core/util/config_loader.o: src/core/util/config_loader.cpp.o
 .PHONY : src/core/util/config_loader.o
 
@@ -255,6 +279,9 @@ help:
 	@echo "... src/apps/wm_node/main.o"
 	@echo "... src/apps/wm_node/main.i"
 	@echo "... src/apps/wm_node/main.s"
+	@echo "... src/core/events/jsonl_event_sink.o"
+	@echo "... src/core/events/jsonl_event_sink.i"
+	@echo "... src/core/events/jsonl_event_sink.s"
 	@echo "... src/core/util/config_loader.o"
 	@echo "... src/core/util/config_loader.i"
 	@echo "... src/core/util/config_loader.s"
