@@ -7,6 +7,12 @@ project(world_model
   LANGUAGES CXX
 )
 
+# Keep WSL builds pure Linux. Do not discover Windows toolchains/libs via /mnt/c.
+if(UNIX AND EXISTS "/mnt/c")
+  set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH OFF)
+  list(APPEND CMAKE_IGNORE_PREFIX_PATH "/mnt/c")
+endif()
+
 # -----------------------------
 # Options
 # -----------------------------
@@ -15,14 +21,6 @@ option(WM_ENABLE_WARNINGS "Enable compiler warnings" ON)
 option(WM_ENABLE_WERROR "Treat warnings as errors" OFF)
 option(WM_ENABLE_ASAN "Enable AddressSanitizer (debug/dev only)" OFF)
 option(WM_ENABLE_UBSAN "Enable UndefinedBehaviourSanitizer (debug/dev only)" OFF)
-
-# Prefer lld if available (cleaner link output, usually faster)
-if(NOT MSVC)
-  find_program(LLD_LINKER ld.lld)
-  if(LLD_LINKER)
-    add_link_options(-fuse-ld=lld)
-  endif()
-endif()
 
 # -----------------------------
 # Global settings
@@ -107,10 +105,6 @@ endfunction()
 # -----------------------------
 find_package(yaml-cpp REQUIRED)
 
-find_package(fmt QUIET)
-find_package(spdlog QUIET)
-find_package(Eigen3 QUIET)
-
 # -----------------------------
 # Libraries
 # -----------------------------
@@ -124,18 +118,6 @@ target_link_libraries(wm_core
   PUBLIC
     yaml-cpp
 )
-
-if(fmt_FOUND)
-  target_link_libraries(wm_core PUBLIC fmt::fmt)
-endif()
-
-if(spdlog_FOUND)
-  target_link_libraries(wm_core PUBLIC spdlog::spdlog)
-endif()
-
-if(Eigen3_FOUND)
-  target_link_libraries(wm_core PUBLIC Eigen3::Eigen)
-endif()
 
 wm_enable_warnings(wm_core)
 wm_enable_sanitisers(wm_core)
