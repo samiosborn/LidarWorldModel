@@ -68,6 +68,10 @@ Each event includes:
 - size/volume, confidence, persistence duration
 - optional minimal metadata for movement heuristics (e.g. overlap with previous AABB)
 
+Time contract (emitted in all events/logs):
+- `t_ns`: logical time since run start (starts at 0)
+- `t_wall_ns`: absolute epoch time in nanoseconds
+
 Event schemas live in `schemas/events/` and should remain backwards compatible.
 
 ---
@@ -179,7 +183,6 @@ docker/
 toolchains/
 .github/workflows/
 
-
 ### What goes where
 
 - `src/core/`  
@@ -236,5 +239,6 @@ Configs are split by concern (and can be layered):
 
 ### Build commands
 ```bash
+rm -rf build
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j

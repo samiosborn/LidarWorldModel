@@ -4,123 +4,122 @@
 #include <filesystem>
 #include <iomanip>
 #include <sstream>
+#include <string>
+#include <system_error>
 
 namespace wm {
-namespace fs = std::filesystem;
+namespace {
 
-static double ns_to_s(const TimestampNs& t) {
-  return static_cast<double>(t.ns) / 1'000'000'000.0;
+double ns_to_s(std::int64_t ns) { return static_cast<double>(ns) * 1e-9; }
+
+std::string join_path(const std::string& a, const std::string& b) {
+  namespace fs = std::filesystem;
+  return (fs::path(a) / fs::path(b)).string();
 }
 
-std::string JsonlEventSink::escape_json(const std::string& s) {
-  std::string out;
-  out.reserve(s.size() + 8);
+// Your TimestampNs is a struct with a `.ns` field (no implicit cast).
+std::int64_t as_i64(TimestampNs t) { return static_cast<std::int64_t>(t.ns); }
 
-  for (const char c : s) {
-    switch (c) {
-      case '\"': out += "\\\""; break;
-      case '\\': out += "\\\\"; break;
-      case '\b': out += "\\b"; break;
-      case '\f': out += "\\f"; break;
-      case '\n': out += "\\n"; break;
-      case '\r': out += "\\r"; break;
-      case '\t': out += "\\t"; break;
-      default:
-        // Allow standard printable ASCII; escape control chars.
-        if (static_cast<unsigned char>(c) < 0x20) {
-          std::ostringstream oss;
-          oss << "\\u" << std::hex << std::setw(4) << std::setfill('0')
-              << static_cast<int>(static_cast<unsigned char>(c));
-          out += oss.str();
-        } else {
-          out += c;
-        }
-    }
-  }
-  return out;
-}
+}  // namespace
+
+JsonlEventSink::~JsonlEventSink() { close(); }
 
 Status JsonlEventSink::open(const RunInfo& run) {
   close();
 
-  try {
-    fs::create_directories(run.out_dir);
-  } catch (const std::exception& e) {
-    return Status::io_error(std::string("failed to create out_dir: ") + e.what());
+  std::error_code ec;
+  std::filesystem::create_directories(run.out_dir, ec);
+  if (ec) {
+    return Status::io_error("failed creating out_dir '" + run.out_dir + "': " + ec.message());
   }
 
-  // One file per run to avoid mixing runs when iterating quickly.
-  // Use start_time (epoch ns) for uniqueness and easy sorting.
-  const std::string filename = "events_" + std::to_string(run.start_time.ns) + ".jsonl";
-  path_ = (fs::path(run.out_dir) / filename).string();
+  const std::int64_t wall0 = as_i64(run.wall_start_time_ns);
+  const std::int64_t t0 = as_i64(run.start_time_ns);
 
-  ofs_.open(path_, std::ios::out | std::ios::app);
-  if (!ofs_.is_open()) {
-    return Status::io_error("failed to open event log for append: " + path_);
-  }
+  path_ = join_path(run.out_dir, "events_" + std::to_string(wall0) + ".jsonl");
+  latest_path_ = join_path(run.out_dir, "events_latest.jsonl");
 
-  // Write run header (as a normal event line).
-  ofs_ << "{"
-       << "\"type\":\"run_started\","
-       << "\"t_ns\":" << run.start_time.ns << ","
-       << "\"t_s\":" << std::fixed << std::setprecision(6) << ns_to_s(run.start_time) << ","
-       << "\"node_id\":\"" << escape_json(run.node_id) << "\","
-       << "\"config_path\":\"" << escape_json(run.config_path) << "\","
-       << "\"config_hash\":\"" << escape_json(run.config_hash) << "\","
-       << "\"calibration_hash\":\"" << escape_json(run.calibration_hash) << "\""
-       << "}\n";
+  f_.open(path_, std::ios::out | std::ios::trunc);
+  if (!f_.is_open()) return Status::io_error("failed opening '" + path_ + "'");
 
-  ofs_.flush();
-  return Status::ok_status();
+  latest_.open(latest_path_, std::ios::out | std::ios::trunc);
+  if (!latest_.is_open()) return Status::io_error("failed opening '" + latest_path_ + "'");
+
+  open_ = true;
+
+  // Run header line (written to BOTH files).
+  std::ostringstream ss;
+  ss << std::fixed << std::setprecision(6);
+  ss << "{"
+     << "\"type\":\"run_started\","
+     << "\"t_ns\":" << t0 << ","
+     << "\"t_s\":" << ns_to_s(t0) << ","
+     << "\"t_wall_ns\":" << wall0 << ","
+     << "\"t_wall_s\":" << ns_to_s(wall0) << ","
+     << "\"node_id\":\"" << run.node_id << "\","
+     << "\"config_path\":\"" << run.config_path << "\","
+     << "\"config_hash\":\"" << run.config_hash << "\","
+     << "\"calibration_hash\":\"" << run.calibration_hash << "\""
+     << "}";
+
+  const Status w = write_line_(ss.str());
+  if (!w.ok()) return w;
+  (void)flush();
+
+  return Status{};
 }
 
 Status JsonlEventSink::emit(const Event& e) {
-  if (!ofs_.is_open()) {
-    return Status::internal("JsonlEventSink::emit called before open()");
-  }
+  if (!open_) return Status::invalid_argument("JsonlEventSink::emit called while not open");
 
-  // Minimal JSON object. Only include spatial fields if frame is set.
-  ofs_ << "{"
-       << "\"type\":\"" << escape_json(e.type) << "\","
-       << "\"t_ns\":" << e.timestamp.ns << ","
-       << "\"t_s\":" << std::fixed << std::setprecision(6) << ns_to_s(e.timestamp);
+  const std::int64_t t = as_i64(e.t_ns);
+  const std::int64_t tw = as_i64(e.t_wall_ns);
 
-  if (!e.frame.empty()) {
-    ofs_ << ",\"frame\":\"" << escape_json(e.frame) << "\""
-         << ",\"aabb\":{"
-         << "\"min\":{" << "\"x\":" << e.aabb.min.x << ",\"y\":" << e.aabb.min.y << ",\"z\":" << e.aabb.min.z << "},"
-         << "\"max\":{" << "\"x\":" << e.aabb.max.x << ",\"y\":" << e.aabb.max.y << ",\"z\":" << e.aabb.max.z << "}"
-         << "}";
-  }
+  std::ostringstream ss;
+  ss << std::fixed << std::setprecision(6);
+
+  ss << "{"
+     << "\"type\":\"" << e.type << "\","
+     << "\"t_ns\":" << t << ","
+     << "\"t_s\":" << ns_to_s(t) << ","
+     << "\"t_wall_ns\":" << tw << ","
+     << "\"t_wall_s\":" << ns_to_s(tw);
 
   if (!e.message.empty()) {
-    ofs_ << ",\"message\":\"" << escape_json(e.message) << "\"";
+    ss << ",\"message\":\"" << e.message << "\"";
   }
 
-  if (e.confidence > 0.0) {
-    ofs_ << ",\"confidence\":" << e.confidence;
-  }
+  ss << "}";
 
-  if (e.persistence_s > 0.0) {
-    ofs_ << ",\"persistence_s\":" << e.persistence_s;
-  }
+  return write_line_(ss.str());
+}
 
-  ofs_ << "}\n";
-  return Status::ok_status();
+Status JsonlEventSink::write_line_(const std::string& line) {
+  f_ << line << "\n";
+  latest_ << line << "\n";
+
+  if (!f_.good()) return Status::io_error("failed writing to '" + path_ + "'");
+  if (!latest_.good()) return Status::io_error("failed writing to '" + latest_path_ + "'");
+
+  return Status{};
 }
 
 Status JsonlEventSink::flush() {
-  if (!ofs_.is_open()) return Status::ok_status();
-  ofs_.flush();
-  return Status::ok_status();
+  if (!open_) return Status{};
+
+  f_.flush();
+  latest_.flush();
+
+  if (!f_.good()) return Status::io_error("failed flushing '" + path_ + "'");
+  if (!latest_.good()) return Status::io_error("failed flushing '" + latest_path_ + "'");
+
+  return Status{};
 }
 
 void JsonlEventSink::close() {
-  if (ofs_.is_open()) {
-    ofs_.flush();
-    ofs_.close();
-  }
-  path_.clear();
+  if (f_.is_open()) f_.close();
+  if (latest_.is_open()) latest_.close();
+  open_ = false;
 }
 
 }  // namespace wm

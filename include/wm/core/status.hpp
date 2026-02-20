@@ -69,7 +69,16 @@ class Result {
   [[nodiscard]] const T* value_if_ok() const noexcept { return ok() ? &(*value_) : nullptr; }
   [[nodiscard]] T* value_if_ok() noexcept { return ok() ? &(*value_) : nullptr; }
 
-  [[nodiscard]] T take_value() { return std::move(*value_); }
+  [[nodiscard]] const T& value() const { return value_.value(); }
+  [[nodiscard]] T& value() { return value_.value(); }
+
+  [[nodiscard]] const T& operator*() const { return value(); }
+  [[nodiscard]] T& operator*() { return value(); }
+
+  [[nodiscard]] const T* operator->() const { return &value(); }
+  [[nodiscard]] T* operator->() { return &value(); }
+
+  [[nodiscard]] T take_value() { return std::move(value_.value()); }
 
  private:
   explicit Result(T value) : value_(std::move(value)), status_(Status::ok_status()) {}

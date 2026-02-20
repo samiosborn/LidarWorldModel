@@ -1,4 +1,4 @@
-// include/wm/core/config_loader.hpp
+// include/wm/core/util/config_loader.hpp
 #pragma once
 
 #include <string>

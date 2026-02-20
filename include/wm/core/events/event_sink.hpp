@@ -4,36 +4,37 @@
 #include <string>
 
 #include "wm/core/status.hpp"
-#include "wm/core/types.hpp"
+#include "wm/core/types.hpp"  // TimestampNs
 
 namespace wm {
 
-// Minimal event model for now.
-// Keep output stable and boring; evolve by adding fields (not breaking existing ones).
-
+// Run metadata.
+// Time contract:
+//  - start_time_ns      : logical run time origin (relative, usually 0)
+//  - wall_start_time_ns : wall-clock epoch time at run start (absolute)
 struct RunInfo {
-  NodeId node_id;
+  std::string node_id;
   std::string config_path;
   std::string out_dir;
 
-  // Filled later when repro hashing lands.
   std::string config_hash;
   std::string calibration_hash;
 
-  TimestampNs start_time;
+  TimestampNs start_time_ns{0};
+  TimestampNs wall_start_time_ns{0};
 };
 
+// Event payload for MVP.
+// Time contract:
+//  - t_ns      : logical time since run start (relative, starts at 0)
+//  - t_wall_ns : wall-clock epoch ns (absolute)
 struct Event {
-  std::string type;     // e.g. "run_started", "heartbeat", "obstacle_added"
-  TimestampNs timestamp;
+  std::string type;
 
-  // Spatial fields (optional). If frame is empty, treat as non-spatial event.
-  FrameName frame;
-  AABB aabb;
+  TimestampNs t_ns{0};
+  TimestampNs t_wall_ns{0};
 
-  std::string message;  // optional human-readable hint
-  double confidence = 0.0;
-  double persistence_s = 0.0;
+  std::string message;
 };
 
 class EventSink {

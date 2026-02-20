@@ -1,5 +1,5 @@
 // src/core/util/config_loader.cpp
-#include "wm/core/config_loader.hpp"
+#include "wm/core/util/config_loader.hpp"
 
 #include <algorithm>
 #include <cctype>
