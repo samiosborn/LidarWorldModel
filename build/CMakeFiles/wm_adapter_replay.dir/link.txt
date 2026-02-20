@@ -1,2 +1,0 @@
-/usr/bin/ar qc lib/libwm_adapter_replay.a CMakeFiles/wm_adapter_replay.dir/src/adapters/replay/replay_reader.cpp.o
-/usr/bin/ranlib lib/libwm_adapter_replay.a
