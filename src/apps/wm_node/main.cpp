@@ -1,14 +1,14 @@
-// src/apps/wm_node/main.cpp
+// File: src/apps/wm_node/main.cpp
 #include <cstdlib>
 #include <iostream>
 #include <string>
 #include <vector>
-#include <chrono>
 
 #include "wm/core/config.hpp"
 #include "wm/core/config_loader.hpp"
-#include "wm/core/status.hpp"
 #include "wm/core/events/jsonl_event_sink.hpp"
+#include "wm/core/model/node_runner.hpp"
+#include "wm/core/status.hpp"
 
 namespace {
 
@@ -33,23 +33,12 @@ double ns_to_seconds(std::int64_t ns) {
   return static_cast<double>(ns) / 1'000'000'000.0;
 }
 
-wm::TimestampNs now_epoch_ns() {
-  using clock = std::chrono::system_clock;
-  const auto now = clock::now().time_since_epoch();
-  const auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(now).count();
-  return wm::TimestampNs{static_cast<std::int64_t>(ns)};
-}
-
-
 wm::Result<wm::RunMode> parse_mode(const std::string& s) {
-  const auto lower = [&]() {
-    std::string t = s;
-    for (char& c : t) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-    return t;
-  }();
+  std::string t = s;
+  for (char& c : t) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
 
-  if (lower == "replay") return wm::Result<wm::RunMode>::ok(wm::RunMode::kReplay);
-  if (lower == "live") return wm::Result<wm::RunMode>::ok(wm::RunMode::kLive);
+  if (t == "replay") return wm::Result<wm::RunMode>::ok(wm::RunMode::kReplay);
+  if (t == "live") return wm::Result<wm::RunMode>::ok(wm::RunMode::kLive);
   return wm::Result<wm::RunMode>::err(wm::Status::invalid_argument("unknown mode: " + s));
 }
 
@@ -180,7 +169,6 @@ void print_config_summary(const wm::Config& cfg) {
 int main(int argc, char** argv) {
   auto args_r = parse_args(argc, argv);
   if (!args_r.ok()) {
-    // Special case: user asked for help.
     if (args_r.status().message() == "help") {
       print_usage(argv[0]);
       return 0;
@@ -199,7 +187,7 @@ int main(int argc, char** argv) {
   }
   wm::Config cfg = cfg_r.take_value();
 
-  // Apply CLI overrides (kept intentionally minimal).
+  // CLI overrides are intentionally minimal. Keep the config file as the source of truth.
   if (!args.node_id.empty()) cfg.node_id = args.node_id;
 
   if (!args.mode.empty()) {
@@ -214,46 +202,36 @@ int main(int argc, char** argv) {
   if (!args.dataset_path.empty()) cfg.replay.dataset_path = args.dataset_path;
   if (!args.out_dir.empty()) cfg.output.out_dir = args.out_dir;
 
-  // Re-validate after overrides.
   const wm::Status s = wm::validate_config(cfg);
   if (!s.ok()) {
     std::cerr << "error: invalid config after overrides: " << s.message() << "\n";
     return 2;
   }
 
-    // Write a run header + one heartbeat so we can see output end-to-end.
+  // Lifecycle lives in NodeRunner. main stays thin and predictable.
   wm::JsonlEventSink sink;
-  wm::RunInfo run;
-  run.node_id = cfg.node_id;
-  run.config_path = args.config_path;
-  run.out_dir = cfg.output.out_dir;
-  run.config_hash = "";       // wired up when repro_hash lands
-  run.calibration_hash = "";  // wired up when repro_hash lands
-  run.start_time = now_epoch_ns();
+  wm::NodeRunner runner(cfg, args.config_path);
 
-  {
-    const wm::Status open_s = sink.open(run);
-    if (!open_s.ok()) {
-      std::cerr << "error: failed to open event sink: " << open_s.message() << "\n";
-      return 2;
-    }
-
-    wm::Event hb;
-    hb.type = "heartbeat";
-    hb.timestamp = now_epoch_ns();
-    hb.message = "wm_node config loaded";
-    const wm::Status emit_s = sink.emit(hb);
-    if (!emit_s.ok()) {
-      std::cerr << "error: failed to emit heartbeat: " << emit_s.message() << "\n";
-      return 2;
-    }
-
-    sink.flush();
-    std::cout << "\nWrote events to: " << sink.path() << "\n";
+  const wm::Status start_s = runner.start(sink);
+  if (!start_s.ok()) {
+    std::cerr << "error: failed to start runner: " << start_s.message() << "\n";
+    return 2;
   }
 
-  // For now: just prove config load + deterministic overrides.
+  // Prove the output path + hashes are wired end-to-end.
+  const wm::Status hb_s = runner.emit_heartbeat(sink, "wm_node config loaded");
+  if (!hb_s.ok()) {
+    std::cerr << "error: failed to emit heartbeat: " << hb_s.message() << "\n";
+    runner.stop(sink);
+    return 2;
+  }
+
+  (void)sink.flush();
+  std::cout << "\nWrote events to: " << sink.path() << "\n\n";
+
   print_config_summary(cfg);
+
+  runner.stop(sink);
 
   std::cout << "\nOK\n";
   return 0;
