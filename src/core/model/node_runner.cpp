@@ -32,7 +32,8 @@ std::int64_t parse_events_epoch_ns_from_name(const std::string& name) {
   if (name.size() <= prefix.size() + suffix.size()) return -1;
   if (name.substr(name.size() - suffix.size()) != suffix) return -1;
 
-  const std::string mid = name.substr(prefix.size(), name.size() - prefix.size() - suffix.size());
+  const std::string mid =
+      name.substr(prefix.size(), name.size() - prefix.size() - suffix.size());
   if (!is_digits(mid)) return -1;
 
   try {
@@ -57,7 +58,8 @@ TimestampNs NodeRunner::wall_now_epoch_ns() {
 TimestampNs NodeRunner::since_start_ns() const {
   if (!started_) return TimestampNs{0};
   const auto now = std::chrono::steady_clock::now();
-  const auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(now - t0_steady_).count();
+  const auto ns =
+      std::chrono::duration_cast<std::chrono::nanoseconds>(now - t0_steady_).count();
   return TimestampNs{static_cast<std::int64_t>(ns)};
 }
 
@@ -126,6 +128,15 @@ Status NodeRunner::emit_heartbeat_at(EventSink& sink, TimestampNs t_ns, const st
   Event e;
   e.type = "heartbeat";
   e.t_ns = t_ns;
+  e.t_wall_ns = wall_now_epoch_ns();
+  e.message = message;
+  return sink.emit(e);
+}
+
+Status NodeRunner::emit_event(EventSink& sink, const std::string& type, const std::string& message) {
+  Event e;
+  e.type = type;
+  e.t_ns = since_start_ns();
   e.t_wall_ns = wall_now_epoch_ns();
   e.message = message;
   return sink.emit(e);
