@@ -222,6 +222,34 @@ Result<Config> load_config(const std::string& path_str) {
     maybe_set(r, "loop", cfg.replay.loop);
   }
 
+  // --- input
+  if (is_map(y["input"])) {
+    const auto i = y["input"];
+    maybe_set(i, "type", cfg.input.type);
+    cfg.input.type = to_lower(cfg.input.type);
+    maybe_set(i, "tick_hz", cfg.input.tick_hz);
+    maybe_set(i, "heartbeat_every_s", cfg.input.heartbeat_every_s);
+    maybe_set(i, "max_ticks", cfg.input.max_ticks);
+    maybe_set(i, "max_run_s", cfg.input.max_run_s);
+
+    if (is_map(i["synth"])) {
+      const auto s = i["synth"];
+      maybe_set(s, "seed", cfg.input.synth.seed);
+      maybe_set(s, "num_points", cfg.input.synth.num_points);
+      maybe_set(s, "enable_obstacle", cfg.input.synth.enable_obstacle);
+      maybe_set(s, "obstacle_start_s", cfg.input.synth.obstacle_start_s);
+      maybe_set(s, "moving_obstacle", cfg.input.synth.moving_obstacle);
+      maybe_set(s, "obstacle_speed_mps", cfg.input.synth.obstacle_speed_mps);
+    }
+
+    if (is_map(i["frame_dir"])) {
+      const auto d = i["frame_dir"];
+      maybe_set(d, "path", cfg.input.frame_dir.path);
+      maybe_set(d, "loop", cfg.input.frame_dir.loop);
+      maybe_set(d, "fps", cfg.input.frame_dir.fps);
+    }
+  }
+
   // --- output
   if (is_map(y["output"])) {
     const auto o = y["output"];

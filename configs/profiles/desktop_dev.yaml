@@ -2,18 +2,23 @@
 mode: replay
 node_id: node_001
 
-runtime:
+input:
+  type: synth                # synth | frame_dir
   tick_hz: 10
-  heartbeat_period_s: 5
-  frame_event_every_n: 1      # 1 = every tick, 10 = once/sec (at 10 Hz), 0 = never
-  max_runtime_s: 0            # 0 = run forever
-
-source:
-  type: synth                 # synth | frame_dir
-  loop: true
+  heartbeat_every_s: 5
+  max_ticks: 0               # 0 = run forever
+  max_run_s: 0               # 0 = run forever
   synth:
-    baseline_s: 5
+    seed: 1
+    num_points: 1600
+    enable_obstacle: true
     obstacle_start_s: 8
+    moving_obstacle: false
+    obstacle_speed_mps: 0.25
+  frame_dir:
+    path: data/frames
+    loop: true
+    fps: 0                   # 0 => use input.tick_hz
 
 frames:
   lidar_frame: lidar

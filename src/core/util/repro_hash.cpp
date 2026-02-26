@@ -143,6 +143,24 @@ std::string compute_config_hash(const Config& cfg) {
   h.add_i64(cfg.replay.end_offset_ns);
   h.add_bool(cfg.replay.loop);
 
+  // Input.
+  h.add_string(cfg.input.type);
+  h.add_double(cfg.input.tick_hz);
+  h.add_i32(cfg.input.heartbeat_every_s);
+  h.add_i64(cfg.input.max_ticks);
+  h.add_double(cfg.input.max_run_s);
+
+  h.add_u32(cfg.input.synth.seed);
+  h.add_i32(cfg.input.synth.num_points);
+  h.add_bool(cfg.input.synth.enable_obstacle);
+  h.add_double(cfg.input.synth.obstacle_start_s);
+  h.add_bool(cfg.input.synth.moving_obstacle);
+  h.add_float(cfg.input.synth.obstacle_speed_mps);
+
+  h.add_string(cfg.input.frame_dir.path);
+  h.add_bool(cfg.input.frame_dir.loop);
+  h.add_double(cfg.input.frame_dir.fps);
+
   // Output.
   h.add_string(cfg.output.out_dir);
   h.add_i32(cfg.output.heartbeat_period_s);

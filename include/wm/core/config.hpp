@@ -152,6 +152,36 @@ struct ReplayConfig {
 };
 
 // -----------------------------
+// Input source (Milestone 1)
+// -----------------------------
+struct InputSynthConfig {
+  std::uint32_t seed = 1;
+  int num_points = 1600;
+  bool enable_obstacle = true;
+  double obstacle_start_s = 8.0;
+  bool moving_obstacle = false;
+  float obstacle_speed_mps = 0.25f;
+};
+
+struct InputFrameDirConfig {
+  std::string path;
+  bool loop = false;
+  // If <= 0, wm_node uses input.tick_hz for generated frame timestamps.
+  double fps = 0.0;
+};
+
+struct InputConfig {
+  std::string type = "synth";  // synth | frame_dir
+  double tick_hz = 10.0;
+  int heartbeat_every_s = 5;   // 0 disables
+  std::int64_t max_ticks = 0;  // 0 disables
+  double max_run_s = 0.0;      // 0 disables
+
+  InputSynthConfig synth;
+  InputFrameDirConfig frame_dir;
+};
+
+// -----------------------------
 // Output (events + logs)
 // -----------------------------
 struct OutputConfig {
@@ -178,6 +208,7 @@ struct Config {
   ChangeDetectionConfig change;
 
   ReplayConfig replay;
+  InputConfig input;
   OutputConfig output;
 };
 
@@ -198,9 +229,6 @@ inline Status validate_config(const Config& cfg) {
   if (cfg.change.persistence_ns < 0) {
     return Status::invalid_argument("change.persistence_ns must be >= 0");
   }
-  if (cfg.mode == RunMode::kReplay && cfg.replay.dataset_path.empty()) {
-    return Status::invalid_argument("replay.dataset_path must not be empty in replay mode");
-  }
   if (cfg.budgets.max_points_per_sec <= 0) {
     return Status::invalid_argument("budgets.max_points_per_sec must be > 0");
   }
@@ -209,6 +237,27 @@ inline Status validate_config(const Config& cfg) {
   }
   if (cfg.output.out_dir.empty()) {
     return Status::invalid_argument("output.out_dir must not be empty");
+  }
+  if (cfg.input.tick_hz <= 0.0) {
+    return Status::invalid_argument("input.tick_hz must be > 0");
+  }
+  if (cfg.input.heartbeat_every_s < 0) {
+    return Status::invalid_argument("input.heartbeat_every_s must be >= 0");
+  }
+  if (cfg.input.max_ticks < 0) {
+    return Status::invalid_argument("input.max_ticks must be >= 0");
+  }
+  if (cfg.input.max_run_s < 0.0) {
+    return Status::invalid_argument("input.max_run_s must be >= 0");
+  }
+  if (cfg.input.synth.num_points <= 0) {
+    return Status::invalid_argument("input.synth.num_points must be > 0");
+  }
+  if (cfg.input.type != "synth" && cfg.input.type != "frame_dir") {
+    return Status::invalid_argument("input.type must be 'synth' or 'frame_dir'");
+  }
+  if (cfg.input.type == "frame_dir" && cfg.input.frame_dir.path.empty()) {
+    return Status::invalid_argument("input.frame_dir.path must not be empty for frame_dir input");
   }
   return Status::ok_status();
 }

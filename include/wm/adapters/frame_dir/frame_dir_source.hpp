@@ -11,39 +11,37 @@
 namespace wm {
 
 struct FrameDirSourceConfig {
-  std::string root_dir;               // e.g. data/replay/run_001
-  std::string frames_subdir{"frames"}; // contains 000000.bin, 000001.bin, ...
-  std::string timestamps_file{"timestamps_ns.txt"}; // one int64 ns per line (optional)
+  // Directory containing frame files.
+  // Format: one ".bin" file per frame, each file packed as float32 x,y,z,intensity per point.
+  // Files are consumed in lexicographic filename order for deterministic playback.
+  std::string path;
   bool loop{false};
-
-  // If timestamps file is missing, we synthesize timestamps at this rate.
-  double fallback_tick_hz{10.0};
+  // If <= 0, caller pacing is used but timestamps are still synthesized at 10 Hz.
+  double fps{0.0};
 };
 
-class FrameDirSource final : public IFrameSource {
+class FrameDirSource final : public FrameSource {
  public:
   explicit FrameDirSource(FrameDirSourceConfig cfg);
+  ~FrameDirSource() override { close(); }
 
-  // Call once after construction. Keeps ctor simple (no throwing / no implicit IO).
-  Status open();
-
-  Status next(Frame* out) override;
-  Status reset() override;
-
-  std::string name() const override { return "frame_dir"; }
+  Status open() override;
+  Result<Frame> next() override;
+  void close() override;
 
  private:
-  Status load_timestamps_if_present();
-  static std::string join_path(const std::string& a, const std::string& b);
-  static std::string frame_filename(std::size_t idx);
+  Status load_file_list();
+  Result<Frame> read_frame(const std::string& path, const std::string& frame_id);
 
   FrameDirSourceConfig cfg_;
   bool opened_{false};
 
-  std::vector<std::int64_t> timestamps_ns_;
+  std::vector<std::string> frame_paths_;
+  std::vector<std::string> frame_ids_;
   std::size_t idx_{0};
+  std::int64_t emitted_{0};
 
-  std::int64_t fallback_period_ns_{100000000}; // 10 Hz
+  std::int64_t frame_period_ns_{100000000};
 };
 
 }  // namespace wm
